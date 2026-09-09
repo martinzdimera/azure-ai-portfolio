@@ -9,9 +9,11 @@ and **measured results** are preserved.
 | [UDF2_ARCHITECTURE_v3.1-public.pdf](UDF2_ARCHITECTURE_v3.1-public.pdf) | 26 | **Universal Deployment Framework** — audit-ready, repeatable Azure environment deployment: 12 stages, declarative inventory, preflight + independent triple-check before any write to Azure. |
 | [AutoDoc_FW_ARCHITECTURE_v3-public.pdf](AutoDoc_FW_ARCHITECTURE_v3-public.pdf) | 26 | **Azure Auto-Documentation & Diagramming Framework** — deterministic workbook (30+ sheets) and architecture diagrams generated from a single environment snapshot; same snapshot, same output. |
 | [FactoryFW_ASBUILT_v1-public.pdf](FactoryFW_ASBUILT_v1-public.pdf) | 15 | **Agentic delivery framework (as-built)** — role separation (author / scope checker / implementation worker / reviewer), quality gates, autonomy lock, runtime sequence views. |
-| [fleetguard-case-sheet.pdf](fleetguard-case-sheet.pdf) | 2 | **Case sheet** — multi-tenant SaaS built with the agentic framework: ~5 weeks, 93 commits, 22 merged PRs, application code not written by hand; human approvals at every gate. |
+| [fleetguard-case-sheet-v1.pdf](fleetguard-case-sheet-v1.pdf) | 2 | **Case sheet** — multi-tenant SaaS built with the agentic framework: ~5 weeks, 93 commits, 22 merged PRs, application code not written by hand; human approvals at every gate. |
 | [Deep-Research-Martins_v2.2-public-EN.pdf](Deep-Research-Martins_v2.2-public-EN.pdf) | 10 | **Verifiable AI research apparatus** (English) — evidence chain, claim-by-claim source validation, blind cross-model review, PRISMA-inspired process with explicit stop conditions. |
 | [Deep-Research-Martins_v2.2-public.pdf](Deep-Research-Martins_v2.2-public.pdf) | 10 | Czech edition of the research apparatus document. |
+
+Versions, page counts and SHA-256 checksums for every file are in [MANIFEST.md](MANIFEST.md); each document passes an automated pre-publication check (format, empty pages, sanitization, diagram rendering) before it is published here.
 
 ## Principles behind all of it
 
