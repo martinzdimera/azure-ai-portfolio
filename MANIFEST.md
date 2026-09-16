@@ -4,18 +4,19 @@ Every document here is a sanitized public edition, built from a versioned source
 checked by an automated gate before publication. The gate is fail-closed: a single
 failed check blocks the upload.
 
-**Package:** v1.7 · **Built:** 2026-09-16 · **Gate result:** 8/8 passed
+**Package:** v1.8 · **Built:** 2026-09-16 · **Gate result:** 9/9 passed
 
 | # | File | Version | Pages | SHA-256 |
 |---|---|---|---:|---|
 | 1 | `UDF2_ARCHITECTURE_v3.1-public.pdf` | v3.1 Public Edition | 26 | `09e1965f4fd584ec0db3ece6ed6df94c18954d53b555029b54284fac34316c50` |
 | 2 | `AutoDoc_FW_ARCHITECTURE_v3-public.pdf` | v3 Public Edition | 26 | `cb2a179a1859d3526d61ebb0b6e71778e07b28fbae9ed13e89a9a31c9a04742d` |
 | 3 | `FactoryFW_ASBUILT_v1-public.pdf` | v1 Public Edition | 15 | `b401a5e16f97fc40d953c0c162bf92bb086b1bb237ee8529b1fe6d42fda4c9dd` |
-| 4 | `fleetguard-case-sheet-v2.3.pdf` | v2.3 | 3 | `725fdf036d3d3e81ea7168082f6bea1ceaf24a8aacfc69cb5e7cffee112a435d` |
+| 4 | `fleetguard-case-sheet-v2.4.pdf` | v2.4 | 3 | `408fc2939ca9b000bba564a29792da01fa3b274e12911586d9fcd6da725404db` |
 | 5 | `Deep-Research-Martins_v2.2-public-EN.pdf` | v2.1.2 + v2.2 wave 1 | 10 | `1517cb9458efcf12b07496a3c66c41c026f22a395bf4bc9efb36675dd571f26f` |
 | 6 | `Deep-Research-Martins_v2.2-public.pdf` | v2.1.2 + v2.2 wave 1 (Czech) | 10 | `6c955ba19171dbf1541418924a9e2ca7b6ca923a922d8cc329eadedfb956ef0f` |
 | 7 | `hyperv-recovery-case-sheet-v1.1.pdf` | v1.1 | 5 | `dad7f20bb3b25bfb30f95c5d95e4b4865c30ddfe654ecbd0326f0e360b9afa18` |
 | 8 | `hyperv-phase2-case-sheet-v1.0.pdf` | v1.0 (phase in progress) | 5 | `029e420558bbab60e885ec8182d672e0fd626bba7d7355a78b8d385878d41e91` |
+| 9 | `fleetguard-delivery-mechanics-v1.0.pdf` | v1.0 Public Edition | 12 | `1e6dbcb3f443bfe999d3ee231eba5f0225c84db6aff59459fce67c370c20e600` |
 
 Verify any file with `shasum -a 256 <file>`.
 
