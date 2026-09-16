@@ -4,7 +4,7 @@ Every document here is a sanitized public edition, built from a versioned source
 checked by an automated gate before publication. The gate is fail-closed: a single
 failed check blocks the upload.
 
-**Package:** v1.6 · **Built:** 2026-09-11 · **Gate result:** 7/7 passed
+**Package:** v1.7 · **Built:** 2026-09-16 · **Gate result:** 8/8 passed
 
 | # | File | Version | Pages | SHA-256 |
 |---|---|---|---:|---|
@@ -15,6 +15,7 @@ failed check blocks the upload.
 | 5 | `Deep-Research-Martins_v2.2-public-EN.pdf` | v2.1.2 + v2.2 wave 1 | 10 | `1517cb9458efcf12b07496a3c66c41c026f22a395bf4bc9efb36675dd571f26f` |
 | 6 | `Deep-Research-Martins_v2.2-public.pdf` | v2.1.2 + v2.2 wave 1 (Czech) | 10 | `6c955ba19171dbf1541418924a9e2ca7b6ca923a922d8cc329eadedfb956ef0f` |
 | 7 | `hyperv-recovery-case-sheet-v1.1.pdf` | v1.1 | 5 | `dad7f20bb3b25bfb30f95c5d95e4b4865c30ddfe654ecbd0326f0e360b9afa18` |
+| 8 | `hyperv-phase2-case-sheet-v1.0.pdf` | v1.0 (phase in progress) | 5 | `029e420558bbab60e885ec8182d672e0fd626bba7d7355a78b8d385878d41e91` |
 
 Verify any file with `shasum -a 256 <file>`.
 
