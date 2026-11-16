@@ -1,0 +1,38 @@
+sequenceDiagram
+    autonumber
+    actor U as Uzivatel
+    participant C as MCP klient Claude nebo ChatGPT
+    participant G as MCP Gateway
+    participant E as Microsoft Entra ID
+
+    Note over C,G: Faze 1 - objeveni autorizacniho serveru
+    C->>G: POST /mcp bez hlavicky Authorization
+    G-->>C: 401 Unauthorized + WWW-Authenticate Bearer resource_metadata a scope
+    Note over C: Klient cte resource_metadata primo z hlavicky
+    C->>G: GET /.well-known/oauth-protected-resource/mcp/acme
+    G-->>C: 200 PRM JSON - resource, authorization_servers, scopes_supported
+    C->>E: GET tenant-id/v2.0/.well-known/openid-configuration
+    E-->>C: AS metadata - authorization_endpoint, token_endpoint, jwks_uri, issuer
+    Note over C: Overeni ze issuer v metadatech odpovida issueru z PRM
+
+    Note over C,E: Faze 2 - PKCE authorization code flow
+    C->>C: Vygeneruje code_verifier a code_challenge metodou S256
+    C->>E: GET authorize s client_id, redirect_uri, code_challenge, resource, scope, state
+    E->>U: Prihlaseni, MFA a vyhodnoceni Conditional Access
+    U-->>E: Souhlas se scopy
+    E-->>C: 302 na redirect_uri s parametry code, state a iss
+    Note over C: Retezcove porovnani iss se zaznamenanym issuerem
+    C->>E: POST token - grant_type authorization_code, code_verifier, resource
+    E-->>C: access_token v2, refresh_token, expires_in
+
+    Note over C,G: Faze 3 - autorizovane volani
+    C->>G: POST /mcp s Authorization Bearer access_token
+    G->>E: GET jwks_uri pouze pri cache miss nebo rotaci klice
+    E-->>G: JWKS sada verejnych klicu
+    G->>G: Overeni podpisu, aud, iss, exp, nbf, tid a claimu roles
+    G-->>C: 200 OK s vysledkem MCP volani
+
+    Note over C,E: Faze 4 - obnova tokenu
+    C->>E: POST token - grant_type refresh_token, resource, scope
+    E-->>C: novy access_token a pripadne rotovany refresh_token
+    Note over C: Claude obnovuje reaktivne pri 401 a proaktivne do 5 minut pred expiraci

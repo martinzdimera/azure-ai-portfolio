@@ -1,0 +1,53 @@
+flowchart TD
+    subgraph GEN["Vznik zaznamu v execution vrstve"]
+        TC["Tool invocation dosahla terminalniho stavu"]
+        EVT["Sestaveni AuditEvent - who, what, kdy, vysledek"]
+        TC --> EVT
+    end
+
+    subgraph HC["Kanonizace a hash chain"]
+        CANON["Kanonizace JSON - deterministicke razeni klicu, redakce PII"]
+        PREVLOOKUP["Nacteni prevHash - posledni zaznam v partition tenantId"]
+        HASH["Vypocet hash = SHA256 canonicalJSON plus prevHash"]
+        EVT --> CANON
+        CANON --> HASH
+        PREVLOOKUP --> HASH
+    end
+
+    subgraph OUT["Outbox pattern"]
+        OUTBOX["Transakcni zapis do outbox tabulky spolu s vysledkem tool callu"]
+        FAILMODE["Selhani zapisu - auditFailureMode rozhoduje failOpen nebo failClosed"]
+        DISPATCH["Outbox dispatcher - at least once, retry s backoff"]
+        HASH --> OUTBOX
+        OUTBOX -.->|"zapis selhal"| FAILMODE
+        OUTBOX --> DISPATCH
+    end
+
+    subgraph SINKS["Dva nezavisle sinky"]
+        SINK_LA["Sink A - DCR ingest do Log Analytics tabulka McpToolInvocation_CL"]
+        SINK_BLOB["Sink B - append do WORM blob audit/rok/mesic/den/hodina.jsonl"]
+        DISPATCH --> SINK_LA
+        DISPATCH --> SINK_BLOB
+    end
+
+    subgraph CHK["Denni checkpoint"]
+        CPJOB["Checkpoint job - jednou denne"]
+        RANGE["Nacteni vsech zaznamu dne z WORM blob"]
+        ROOTHASH["Vypocet korenoveho hash nad rozsahem"]
+        ROOTREC["Zapis checkpoint zaznamu - take hash chained"]
+        CPJOB --> RANGE --> ROOTHASH --> ROOTREC
+        SINK_BLOB -.-> RANGE
+    end
+
+    subgraph VER["Nezavisle overeni integrity"]
+        VERJOB["Verifikacni job - on demand nebo periodicky"]
+        RECOMPUTE["Prepocet hash chain nad zvolenym rozsahem"]
+        COMPARE["Porovnani s ulozenymi hash a s checkpoint root"]
+        OKRES["Integrita potvrzena"]
+        TAMPER["Alert - nesoulad hash, mozny zasah do dat"]
+        VERJOB --> RECOMPUTE --> COMPARE
+        COMPARE -->|"shoda"| OKRES
+        COMPARE -->|"nesoulad"| TAMPER
+        ROOTREC -.-> COMPARE
+        SINK_LA -.->|"kontrolni vzorek"| RECOMPUTE
+    end

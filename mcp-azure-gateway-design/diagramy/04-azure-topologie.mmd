@@ -1,0 +1,81 @@
+flowchart TB
+    subgraph SUB["Azure Subscription - MCP Gateway Prod"]
+        subgraph RG_EDGE["Resource Group rg-mcpgw-edge"]
+            FD["Front Door Premium plus WAF - global edge"]
+            FDPL["Front Door Private Link origin"]
+        end
+
+        subgraph RG_NET["Resource Group rg-mcpgw-network"]
+            subgraph VNET["VNet vnet-mcpgw-prod 10.60.0.0/22 - navrh"]
+                subgraph SNET_ACA["Subnet snet-aca-infra 10.60.0.0/24 - navrh, delegovano Microsoft.App/environments"]
+                    ACAENV["Container Apps Environment - internal, workload profile, Premium ingress"]
+                end
+                subgraph SNET_PE["Subnet snet-pe 10.60.1.0/27 - navrh"]
+                    PE_COS["Private Endpoint Cosmos DB"]
+                    PE_RED["Private Endpoint Managed Redis"]
+                    PE_KV["Private Endpoint Key Vault"]
+                    PE_ST["Private Endpoint Storage WORM"]
+                end
+                subgraph SNET_EGRESS["Subnet snet-egress 10.60.1.32/28 - navrh"]
+                    NATGW["NAT Gateway"]
+                end
+            end
+            NSG_ACA["NSG snet-aca-infra"]
+            NSG_PE["NSG snet-pe"]
+        end
+
+        subgraph RG_COMPUTE["Resource Group rg-mcpgw-compute"]
+            GWAPP["Container App mcp-gateway - Fastify Node.js"]
+            INGJOB["Container Apps Job skill-ingestor"]
+        end
+
+        subgraph RG_DATA["Resource Group rg-mcpgw-data"]
+            COS["Cosmos DB for NoSQL - katalog, entitlements"]
+            RED["Azure Managed Redis - cache, session, rate limit"]
+            KV["Key Vault - secrets, certifikaty"]
+            ST["Storage account WORM - audit archiv"]
+            PDNS_COS["Private DNS zone privatelink.documents.azure.com"]
+            PDNS_RED["Private DNS zone privatelink.redis.azure.net"]
+            PDNS_KV["Private DNS zone privatelink.vaultcore.azure.net"]
+            PDNS_ST["Private DNS zone privatelink.blob.core.windows.net"]
+        end
+
+        subgraph RG_MON["Resource Group rg-mcpgw-monitoring"]
+            LAW["Log Analytics workspace"]
+            AI["Application Insights"]
+        end
+
+        PDNS_ACA["Private DNS zone privatelink.region.azurecontainerapps.io"]
+    end
+
+    ENTRA["Microsoft Entra ID - externi tenant service"]
+    GH["GitHub - externi skill repo"]
+    APIM["APIM plus backend API - existujici, downstream"]
+
+    FD -->|"verejny internet"| FDPL
+    FDPL -->|"Private Link"| ACAENV
+    ACAENV --> GWAPP
+    GWAPP -.->|"resolve"| PDNS_ACA
+    GWAPP -->|"Private Link"| PE_COS
+    PE_COS --> COS
+    GWAPP -->|"Private Link"| PE_RED
+    PE_RED --> RED
+    GWAPP -->|"Private Link"| PE_KV
+    PE_KV --> KV
+    GWAPP -->|"Private Link"| PE_ST
+    PE_ST --> ST
+    PE_COS -.->|"resolve"| PDNS_COS
+    PE_RED -.->|"resolve"| PDNS_RED
+    PE_KV -.->|"resolve"| PDNS_KV
+    PE_ST -.->|"resolve"| PDNS_ST
+    INGJOB -->|"Private Link"| PE_COS
+    INGJOB -->|"Private Link"| PE_KV
+    GWAPP -->|"odchozi"| NATGW
+    NATGW -->|"verejny internet TLS"| ENTRA
+    NATGW -->|"verejny internet TLS"| GH
+    NATGW -->|"verejny internet nebo Private Link varianta B"| APIM
+    GWAPP -->|"OTel export"| AI
+    AI --> LAW
+    GWAPP -->|"diagnostic logs"| LAW
+    NSG_ACA -.->|"chrani"| SNET_ACA
+    NSG_PE -.->|"chrani"| SNET_PE

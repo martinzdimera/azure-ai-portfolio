@@ -1,0 +1,58 @@
+stateDiagram-v2
+    [*] --> Accepted
+    Accepted --> PolicyEvaluated: autorizace se vyhodnocuje pro kazdy pokus, i pro replay
+    PolicyEvaluated --> Denied: PolicyEngine zamitl
+    PolicyEvaluated --> RateLimitChecked: povoleno
+    Denied --> [*]: audit zaznam s effect deny
+    RateLimitChecked --> RateLimited: kvota nebo rate limit prekrocen
+    RateLimitChecked --> IdempotencyChecked: nastroj vyzaduje Idempotency-Key
+    RateLimitChecked --> ConfirmChecked: readOnlyHint true, idempotence se preskakuje
+    RateLimited --> [*]: tool error s retryAfterMs
+    IdempotencyChecked --> ReplayResult: nalezen zaznam se stavem completed
+    IdempotencyChecked --> Conflict: nalezen zaznam se stavem pending
+    IdempotencyChecked --> UnknownOutcomePending: nalezen zaznam se stavem unknownOutcome
+    IdempotencyChecked --> ConfirmChecked: zaznam nenalezen, klic zabran pending
+    ReplayResult --> [*]: vracen ulozeny vysledek, audit se odkazem na puvodni eventId
+    Conflict --> [*]: vracena tool error duplicitni pozadavek bezi
+    UnknownOutcomePending --> [*]: vracena tool error rekonciliace probiha, neopakovat naslepo
+    ConfirmChecked --> ConfirmationRequired: destructiveHint true nebo riskTier high ci critical a confirm chybi
+    ConfirmChecked --> DownstreamCalling: potvrzeno nebo potvrzeni nevyzadovano, zapis writeAttempt pred odeslanim
+    ConfirmationRequired --> [*]: tool error vyzaduje potvrzeni
+    DownstreamCalling --> Succeeded: 2xx a platna odpoved
+    DownstreamCalling --> ToolError: business chyba nebo 4xx z downstream
+    DownstreamCalling --> Retrying: prechodna chyba a zbyva retry rozpocet
+    DownstreamCalling --> TimedOut: tvrdy timeout pred odeslanim pozadavku, nebo nastroj je readOnly
+    DownstreamCalling --> UnknownOutcome: timeout, prerusene spojeni nebo 5xx PO odeslani pozadavku, nastroj neni cistě read
+    DownstreamCalling --> CircuitOpen: circuit breaker je otevreny
+    DownstreamCalling --> Cancelled: klient zrusil pozadavek
+    Retrying --> DownstreamCalling: uplynul backoff, novy pokus
+    Retrying --> TimedOut: vycerpan retry rozpocet
+    Retrying --> Cancelled: zruseno behem cekani na backoff
+    UnknownOutcome --> Reconciled: dohledavaci job zjistil skutecny stav u downstream
+    UnknownOutcome --> ReconcileFailed: downstream neumoznuje dohledani, nebo vycerpan rozpocet pokusu
+    Reconciled --> Succeeded: dohledany stav je uspesne provedeno
+    Reconciled --> ToolError: dohledany stav je neprovedeno
+    ReconcileFailed --> ManualReview: fail-closed, ceka na rucni zasah operatora
+    Succeeded --> [*]: audit outcome success
+    ToolError --> [*]: audit outcome toolError
+    TimedOut --> [*]: audit outcome timeout
+    Cancelled --> [*]: audit outcome cancelled
+    CircuitOpen --> [*]: audit outcome circuitOpen, downstream se ani nevolal
+    ManualReview --> [*]: audit outcome unknownOutcome, reseni mimo automat pres writeAttempts
+
+    note right of PolicyEvaluated
+        Autorizace se vyhodnocuje znovu
+        pri kazdem prehrani, idempotence
+        se cte az po ni
+    end note
+    note right of IdempotencyChecked
+        Redis SET NX klaim se kratkym
+        pending TTL, klic obsahuje
+        principal.oid
+    end note
+    note right of UnknownOutcome
+        Zaznam writeAttempts byl zapsan
+        trvale v Cosmos PRED volanim
+        downstream, pad procesu zde
+        nic neztrati
+    end note

@@ -1,0 +1,20 @@
+stateDiagram-v2
+    [*] --> Closed
+    Closed --> Open: pocet chyb nebo chybovost prekrocily prah v okne
+    Open --> HalfOpen: uplynul cooldown, povolen zkusebni pozadavek
+    HalfOpen --> Closed: zkusebni pozadavky uspesne
+    HalfOpen --> Open: zkusebni pozadavek selhal
+    Open --> Open: nove pozadavky selhavaji rychle bez volani downstream
+
+    note right of Closed
+        Pocitadlo chyb v klouzavem
+        okne, normalni provoz
+    end note
+    note right of Open
+        Vsechny pozadavky na tento
+        downstream vraceji CircuitOpen ihned
+    end note
+    note right of HalfOpen
+        Jen omezeny pocet zkusebnich
+        pozadavku prochazi
+    end note

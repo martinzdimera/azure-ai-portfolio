@@ -1,0 +1,25 @@
+stateDiagram-v2
+    [*] --> Discovered
+    Discovered --> Validating: ingestor prevzal job
+    Validating --> Rejected: schema, policy nebo podpis selhaly
+    Validating --> Validated: vsechny kontroly prosly
+    Rejected --> [*]: notifikace autorovi
+    Validated --> Building: kompilace manifestu, vypocet buildHash
+    Building --> Staged: CatalogVersion zapsana do Cosmos
+    Staged --> Published: atomicky pointer swap nebo pin pro pilot
+    Published --> Superseded: novejsi verze publikovana
+    Published --> RolledBack: admin rollback oznacil tuto verzi za spatnou
+    Superseded --> Published: admin rollback reaktivoval tuto verzi
+    Superseded --> Archived: uplynula retencni doba
+    RolledBack --> Archived: po vysetrovani incidentu
+    Archived --> [*]
+
+    note right of Staged
+        Neni jeste aktivni pro zadny
+        workspace, cekana na publish
+    end note
+
+    note right of Published
+        activePointer nebo
+        pinnedCatalogVersion na ni ukazuje
+    end note

@@ -1,0 +1,174 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mcp.contoso.com/schemas/audit-event/v1.json",
+  "title": "MCP Gateway Audit Event v1",
+  "description": "Formalizace auditního záznamu jednoho tool invocation. Pole a jejich význam jsou popsané v 04-datova-architektura.md §6.1 (rozšířené schéma) a jejich bezpečnostně závazné chování v 07-bezpecnost-a-autorizace.md §11 — tento soubor jen formalizuje totéž jako strojově validovatelné schéma, žádné pole zde nepřidává ani neodebírá. Hash se počítá nad polem schemaVersion a všemi ostatními poli kromě prevHash a hash samotných (JCS/RFC 8785 kanonizace, viz 04 §6.2).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "eventId", "eventTime", "traceId", "spanId", "workspaceSlug", "clientType",
+    "protocolVersion", "principal", "tool", "request", "decision", "execution",
+    "result", "schemaVersion", "prevHash", "hash"
+  ],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "description": "Primární klíč auditní události, např. evt-01J8X... (ULID-styl). Shodné s auditOutbox.id (04 §3.11).",
+      "pattern": "^evt-[A-Za-z0-9]{6,40}$"
+    },
+    "eventTime": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Čas vzniku události v execution/ orchestrátoru, ISO 8601 / RFC 3339, UTC."
+    },
+    "traceId": {
+      "type": "string",
+      "description": "W3C Trace Context trace-id (32 hex znaků) pro korelaci s OTel a s logy (08 §2-§3).",
+      "pattern": "^[0-9a-f]{32}$"
+    },
+    "spanId": {
+      "type": "string",
+      "description": "W3C Trace Context span-id (16 hex znaků).",
+      "pattern": "^[0-9a-f]{16}$"
+    },
+    "workspaceSlug": {
+      "type": "string",
+      "description": "Identifikátor workspace (ADR-015), např. claude-prod.",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "clientType": {
+      "enum": ["claude", "chatgpt", "other"],
+      "description": "Typ klienta (ADR-015)."
+    },
+    "protocolVersion": {
+      "type": "string",
+      "description": "Vyjednaná/deklarovaná revize MCP protokolu pro tento požadavek, např. 2025-11-25 nebo 2026-07-28."
+    },
+    "principal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["oid", "tid", "roles", "authMethod"],
+      "properties": {
+        "oid": { "type": "string", "description": "Entra object id volajícího principálu." },
+        "upn": { "type": "string", "description": "User principal name — přímo identifikující PII, podléhá redakci/crypto-shreddingu (04 §7)." },
+        "tid": { "type": "string", "description": "Entra tenant id." },
+        "appId": { "type": "string", "description": "Client app id (connector), pokud je relevantní pro daný authMethod." },
+        "roles": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Entra app roles z tokenu v okamžiku volání (hrubá vrstva ADR-007)."
+        },
+        "authMethod": {
+          "enum": ["oauth_user", "oauth_client_credentials", "static_header", "anonymous"],
+          "description": "Odpovídá TypeScript union AuthMethod v 03-kodova-architektura.md §4."
+        }
+      }
+    },
+    "tool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "catalogVersionId", "kind", "riskTier"],
+      "properties": {
+        "name": { "type": "string", "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+){1,5}$" },
+        "catalogVersionId": { "type": "string", "description": "id = gitSha-buildHash (ADR-012)." },
+        "kind": { "enum": ["skill", "connector"] },
+        "riskTier": { "enum": ["low", "medium", "high", "critical"] }
+      }
+    },
+    "request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["argumentsHash", "argumentsRedacted"],
+      "properties": {
+        "argumentsHash": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "description": "Hash syrových (neredigovaných) argumentů, spočtený dříve v execution/ orchestrátoru — použitelný pro detekci replaye i když obsah není vidět."
+        },
+        "argumentsRedacted": {
+          "type": "object",
+          "description": "Argumenty po redakci dle tool.auditRedaction.allow (04 §7). Tvar je specifický pro každý nástroj, proto zde bez additionalProperties: false."
+        },
+        "idempotencyKey": {
+          "type": ["string", "null"],
+          "description": "Vyplněno jen pro nástroje bez readOnlyHint: true (jednotná podmínka s krokem 14 kanonické pipeline, oprava S11 v 04)."
+        }
+      }
+    },
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["effect", "matchedRuleId", "reason"],
+      "properties": {
+        "effect": { "enum": ["allow", "deny"] },
+        "matchedRuleId": { "type": ["string", "null"], "description": "Id entitlement pravidla, které rozhodnutí určilo." },
+        "reason": {
+          "description": "Null při effect: allow. Při effect: deny jedna z hodnot DenyReason (03-kodova-architektura.md §4).",
+          "anyOf": [
+            { "type": "null" },
+            { "enum": [
+              "toolset_not_mapped", "no_matching_entitlement", "explicit_deny_rule",
+              "tool_not_in_catalog", "tool_deprecated_removed", "risk_tier_requires_role",
+              "parameter_constraint_violated", "workspace_not_entitled",
+              "rate_limit_exceeded", "entitlement_expired"
+            ] }
+          ]
+        }
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["downstream", "durationMs", "outcome", "errorCode"],
+      "properties": {
+        "downstream": {
+          "description": "Vyplněno pro tool.kind: connector; null pro tool.kind: skill (žádné přímé APIM volání).",
+          "anyOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["apimApiId", "operationId", "httpStatus"],
+              "properties": {
+                "apimApiId": { "type": "string" },
+                "operationId": { "type": "string" },
+                "httpStatus": { "type": ["integer", "null"] }
+              }
+            }
+          ]
+        },
+        "durationMs": { "type": "integer", "minimum": 0 },
+        "outcome": {
+          "enum": ["success", "toolError", "denied", "timeout", "cancelled", "circuitOpen"],
+          "description": "Odpovídá TypeScript union InvocationOutcome v 03-kodova-architektura.md §4."
+        },
+        "errorCode": {
+          "type": ["string", "null"],
+          "description": "Null při outcome: success. Jinak buď hodnota DenyReason (autorizační odmítnutí), nebo aplikační chybový kód dle kanonické tabulky v 05-api-a-protokoly.md §3.3 (např. DOWNSTREAM_TIMEOUT, CIRCUIT_OPEN, RATE_LIMITED) — záměrně ponecháno jako otevřený string, ne uzavřený enum, protože tabulka v 05 kombinuje dvě číselné konvence a bude se rozšiřovat."
+        }
+      }
+    },
+    "result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contentHash", "sizeBytes", "truncated"],
+      "properties": {
+        "contentHash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+        "sizeBytes": { "type": "integer", "minimum": 0 },
+        "truncated": { "type": "boolean" }
+      }
+    },
+    "schemaVersion": { "type": "integer", "minimum": 1 },
+    "prevHash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "description": "Hash předchozího záznamu ve stejném hash chainu (per tenantId, 04 §6.3)."
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "description": "SHA-256 nad kanonizovaným (RFC 8785 JCS) tvarem tohoto záznamu bez polí prevHash a hash."
+    }
+  }
+}

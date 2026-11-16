@@ -1,0 +1,75 @@
+sequenceDiagram
+    autonumber
+    participant C as MCP klient
+    participant FD as Front Door Premium s WAF
+    participant ED as Gateway edge vrstva Fastify
+    participant PR as Gateway protocol EraAdapter
+    participant ID as Gateway identity
+    participant CAT as Gateway catalog CatalogStore
+    participant AZ as Gateway authz PolicyEngine
+    participant EX as Gateway execution
+    participant TS as OBO TokenService
+    participant AP as Azure API Management
+    participant BE as Backend API
+    participant AU as AuditEmitter
+    participant OB as Audit outbox Redis Stream
+    participant LA as Log Analytics custom table
+    participant WB as WORM Blob archiv
+
+    C->>FD: POST /mcp/acme tools_call s Bearer tokenem
+    FD->>FD: WAF DRS 2.2, rate limit podle IP a geo
+    FD->>ED: Private Link na interni ingress Container Apps
+    ED->>ED: Ingress kontroly Content-Type Accept velikost tela a Origin
+    ED->>PR: Predani syroveho JSON-RPC ramce a hlavicek, korelace requestId
+    PR->>PR: Detekce ery a negotiation verze
+    PR->>PR: Parse JSON-RPC a validace obalky
+    PR->>ID: Validace bearer tokenu proti JWKS cache
+    ID-->>PR: Principal s oid, upn, tid, roles a authMethod
+    PR->>CAT: Resolution workspace, routing metody, katalogova verze, dohledani nastroje a validace argumentu
+    CAT-->>PR: ToolDefinition s validovanymi argumenty
+    PR->>AZ: PolicyEngine evaluate CanonicalRequest a Principal
+
+    alt Rozhodnuti Deny
+        AZ-->>EX: PolicyDecision effect deny s matchedRuleId a duvodem
+        EX->>AU: AuditEvent outcome denied
+        AU->>OB: Synchronni zapis do outboxu pred vydanim odpovedi
+        OB-->>AU: Zapis potvrzen
+        EX-->>C: CallToolResult isError true s actionable textem a HTTP 200
+        OB-->>LA: Asynchronni dorucovani po odpovedi
+        OB-->>WB: Asynchronni dorucovani po odpovedi
+    else Rozhodnuti Allow
+        AZ-->>EX: PolicyDecision effect allow s constraints
+        EX->>EX: Rate limit token bucket v Redis
+        EX->>EX: Kontrola idempotence v Redis podle Idempotency-Key
+        alt Idempotence hit
+            EX->>AZ: Opakovane vyhodnoceni autorizace pro replay
+            AZ-->>EX: Potvrzeno stale allow, jinak deny i pro replay
+            EX-->>C: Prehrany ulozeny vysledek
+        else Idempotence miss
+            EX->>EX: Potvrzovaci brana confirm
+            EX->>TS: Zadost o OBO token pro cilove APIM scope
+            TS-->>EX: Access token z cache nebo nove vymeneny
+            EX->>AP: HTTPS volani operace s Authorization, traceparent, x-request-id, x-mcp-tool
+            AP->>BE: Forward na backend podle APIM policy
+            alt Backend odpovedel vcas
+                BE-->>AP: HTTP 200 a telo odpovedi
+                AP-->>EX: HTTP 200 a telo odpovedi
+                EX->>EX: Mapovani na structuredContent, redakce, orez velikosti
+                EX->>AU: AuditEvent outcome success
+                AU->>OB: Synchronni zapis do outboxu pred vydanim odpovedi
+                OB-->>AU: Zapis potvrzen
+                EX-->>C: CallToolResult s content a structuredContent
+                OB-->>LA: Asynchronni dorucovani po odpovedi
+                OB-->>WB: Asynchronni dorucovani po odpovedi
+            else Timeout nebo otevreny circuit breaker
+                AP--xEX: Vyprseni per-volani timeoutu
+                EX->>EX: Zaznam selhani do circuit breakeru
+                EX->>AU: AuditEvent outcome timeout s errorCode
+                AU->>OB: Synchronni zapis do outboxu pred vydanim odpovedi
+                OB-->>AU: Zapis potvrzen
+                EX-->>C: CallToolResult isError true s retryAfterMs v _meta
+                OB-->>LA: Asynchronni dorucovani po odpovedi
+                OB-->>WB: Asynchronni dorucovani po odpovedi
+            end
+        end
+    end

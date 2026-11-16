@@ -1,0 +1,36 @@
+flowchart LR
+    subgraph PUB["Verejny internet"]
+        CLIENT["Claude nebo ChatGPT Business klient"]
+        DNSPUB["Verejny DNS mcp.contoso.com"]
+    end
+
+    subgraph EDGE["Front Door Premium POP - edge"]
+        WAF["WAF - DRS 2.2 managed rules"]
+        FDRL["Front Door rate limit - hruba vrstva"]
+    end
+
+    subgraph PRIV["Privatni Azure backbone - Private Link / VNet"]
+        FDPL["Front Door Private Link origin"]
+        ACAENV["ACA internal ingress - Envoy"]
+        GWAPP["mcp-gateway Container App"]
+        PE_KV["Private Endpoint Key Vault"]
+        NATGW["NAT Gateway - odchozi"]
+    end
+
+    subgraph EXT["Externi sluzby"]
+        ENTRA["Microsoft Entra ID"]
+        GH["GitHub"]
+        APIM["APIM plus backend API - downstream"]
+    end
+
+    CLIENT -->|"HTTPS verejny internet"| DNSPUB
+    DNSPUB -->|"HTTPS verejny internet"| WAF
+    WAF --> FDRL
+    FDRL -->|"Private Link"| FDPL
+    FDPL -->|"privatni paterni sit"| ACAENV
+    ACAENV -->|"internal ingress"| GWAPP
+    GWAPP -->|"Private Link"| PE_KV
+    GWAPP -->|"odchozi pres NAT Gateway"| NATGW
+    NATGW -->|"HTTPS verejny internet"| ENTRA
+    NATGW -->|"HTTPS verejny internet"| GH
+    NATGW -->|"HTTPS verejny internet nebo Private Link varianta B"| APIM

@@ -1,0 +1,37 @@
+flowchart LR
+    subgraph CODE["Kodova pipeline - repo gateway"]
+        direction TB
+        PR["Pull request"]
+        CHECKS["Lint, unit, contract, conformance testy"]
+        KONTRAKTY["Validace kontraktu: kontrakty slozka proti dokumentaci 04 05 07"]
+        SUPPLYCHAIN["SBOM, build image, container scan, IaC scan"]
+        GATE_CODE{"Brany zelene?"}
+        BLOCK_CODE["Blokovano, oprava"]
+        MERGE["Merge a push do ACR"]
+        DEPLOYSTG["Nova revize, 0 procent provozu, smoke testy"]
+        CANARY["Postupny traffic split 5, 25, 50, 100 procent"]
+        AUTOROLLBACK["Automaticky rollback pri poruseni SLO"]
+
+        PR --> CHECKS --> KONTRAKTY --> SUPPLYCHAIN --> GATE_CODE
+        GATE_CODE -->|"ne"| BLOCK_CODE
+        GATE_CODE -->|"ano"| MERGE --> DEPLOYSTG --> CANARY
+        CANARY -.->|"metriky mimo SLO"| AUTOROLLBACK
+    end
+
+    subgraph CATALOG["Katalogova pipeline - repo skills"]
+        direction TB
+        PUSHSKILL["Push na chranenou vetev nebo release"]
+        WEBHOOK["GitHub App webhook, HMAC overeni"]
+        REPOCHECK["Branch protection, signed commits, povinny review"]
+        VALIDATE["Schema validace, lint, policy checky"]
+        GATE_CAT{"Vse proslo?"}
+        BLOCK_CAT["Publikace zamitnuta"]
+        BUILDCAT["Build CatalogVersion, build hash, diff"]
+        PUBLISH["Atomicky pointer swap, invalidace cache"]
+        RECONCILE["Reconcile job kazdych 15 minut proti Git SHA"]
+
+        PUSHSKILL --> WEBHOOK --> REPOCHECK --> VALIDATE --> GATE_CAT
+        GATE_CAT -->|"ne"| BLOCK_CAT
+        GATE_CAT -->|"ano"| BUILDCAT --> PUBLISH
+        RECONCILE -.->|"pojistka"| WEBHOOK
+    end

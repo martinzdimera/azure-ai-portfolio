@@ -1,0 +1,28 @@
+flowchart TB
+    U1["Koncovy uzivatel v Claude"]
+    U2["Koncovy uzivatel v ChatGPT Business"]
+    U3["Spravce katalogu"]
+    U4["Interni IT operator"]
+    U5["Autor skillu"]
+
+    S1["Claude workspace - Anthropic SaaS"]
+    S2["ChatGPT Business workspace - OpenAI SaaS"]
+    GW["MCP Gateway - system v navrhu"]
+    ENTRA["Microsoft Entra ID - autorizacni server"]
+    GH["GitHub - skill repozitar"]
+    APIM["APIM plus backend API - existujici infrastruktura"]
+    MON["Azure Monitor - Log Analytics plus App Insights"]
+
+    U1 -->|"pouziva"| S1
+    U2 -->|"pouziva"| S2
+    S1 -->|"MCP tool call HTTPS"| GW
+    S2 -->|"MCP tool call HTTPS"| GW
+    GW -->|"validuje token"| ENTRA
+    GW -->|"OBO / MI token"| ENTRA
+    GW -->|"forward connector call"| APIM
+    GW -->|"OTel traces metriky logy"| MON
+    GH -->|"webhook push, release"| GW
+    U5 -->|"commituje skill manifest"| GH
+    U3 -->|"publikuje / rollback katalog"| GW
+    U4 -->|"provozuje, monitoruje"| GW
+    U4 -->|"sleduje dashboards"| MON

@@ -1,0 +1,31 @@
+flowchart TB
+    EDGE["edge - Fastify HTTP, TLS, health, well-known"]
+    PROTO["protocol - EraAdapter, JSON-RPC framing"]
+    SESS["session - Mcp-Session-Id, jen era A"]
+    IDENT["identity - JWT validace, OBO, PRM"]
+    AUTHZ["authz - PolicyEngine deny-by-default"]
+    CAT["catalog - CatalogStore, cache, change feed"]
+    SKILL["adapters/skill - manifest to tool, transform"]
+    CONN["adapters/connector - APIM mapping, retry, circuit breaker"]
+    EXEC["execution - orchestrace, idempotence, timeout"]
+    AUDIT["audit - hash chain, dual sink, redakce"]
+    TEL["telemetry - OTel tracer, meter, logger"]
+    CFG["config - typed config, Key Vault reference, flags"]
+
+    EDGE --> PROTO
+    PROTO --> SESS
+    PROTO --> IDENT
+    IDENT --> CAT
+    CAT --> AUTHZ
+    AUTHZ --> EXEC
+    CAT --> SKILL
+    CAT --> CONN
+    EXEC --> SKILL
+    EXEC --> CONN
+    EXEC --> AUDIT
+    EDGE --> TEL
+    EXEC --> TEL
+    CFG --> IDENT
+    CFG --> CAT
+    CFG --> CONN
+    CFG --> AUDIT

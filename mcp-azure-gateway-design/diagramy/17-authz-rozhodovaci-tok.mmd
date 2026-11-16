@@ -1,0 +1,65 @@
+flowchart TD
+    REQ["Prichozi MCP request s Bearer tokenem"]
+    RTBGLOBAL{"RuntimeBlock kontrola - workspace nebo global scope, TTL 0, fail-closed pri nedostupnosti"}
+    RTBDENYPRE["Deny - RuntimeBlock aktivni na workspace nebo globalne, nebo blokovaci seznam nedostupny"]
+    VALTOK["Validace tokenu - issuer, audience, signature, nbf, exp, tid, verze v2, JWKS cache"]
+    TOKOK{"Token platny?"}
+    D401["HTTP 401 plus WWW-Authenticate Bearer resource_metadata"]
+    PRINCIPAL["Sestaveni Principal - oid, upn, tid, appId, roles z claimu"]
+    RTBPRINCIPAL{"RuntimeBlock kontrola - principal scope, TTL 0, fail-closed pri nedostupnosti"}
+    RTBDENYPRINCIPAL["Deny - RuntimeBlock aktivni na tohoto principala, nebo blokovaci seznam nedostupny"]
+    COARSE["Hruba vrstva - prunik funkcni role a domenove role, mapovani na tool sety pro workspace"]
+    HASSET{"Alespon jeden tool set namapovan?"}
+    DENYSET["Deny - zadna kombinace funkcni a domenove role nema tool set v tomto workspace"]
+    OPTYPE{"Typ operace"}
+
+    LISTFLOW["tools/list - projekce katalogu"]
+    LISTFILTER["Filtrace katalogu na tool sety principal"]
+    LISTRETURN["Vrat jen povolene nastroje, stabilni razeni, cursor"]
+
+    CALLFLOW["tools/call - konkretni tool a argumenty"]
+    FINDTOOL["Nalezeni tool definice v aktivni CatalogVersion"]
+    TOOLEXISTS{"Tool existuje a je v tool setu principal?"}
+    DENYNOTOOL["Deny - tool neni v dosahu role, tool error"]
+    RTBTOOL{"RuntimeBlock kontrola - tool scope, TTL 0, fail-closed pri nedostupnosti"}
+    RTBDENYTOOL["Deny - RuntimeBlock aktivni na tento nastroj, nebo blokovaci seznam nedostupny"]
+
+    FINE["Jemna vrstva - nacti entitlement pravidla principalSelector x toolSelector"]
+    ANYRULE{"Existuje shodujici se pravidlo?"}
+    DEFAULTDENY["Deny by default - zadne pravidlo se neshoduje"]
+    HASDENY{"Existuje mezi shodami explicitni effect deny?"}
+    EXPLICITDENY["Deny - explicitni deny ma prednost pred allow"]
+    PICKSPECIFIC["Vyber nejspecifictejsiho allow pravidla podle selektoru"]
+    CONSTRAINTS["Vyhodnoceni parametrovych constraintu a data scope"]
+    CONSTRAINTOK{"Argumenty a data scope vyhovuji?"}
+    DENYCONSTRAINT["Deny - argument mimo povoleny constraint"]
+    ALLOW["Rozhodnuti Allow"]
+    OBJAUTH["Objektova autorizace - downstream vynuti pravo na konkretni zaznam, gateway neduplikuje"]
+
+    AUDITDENY["Audit zapis - effect deny, matchedRuleId, reason"]
+    AUDITALLOW["Audit zapis - effect allow, matchedRuleId"]
+    TOOLERR["Vrat tool error isError true s citelnym duvodem"]
+    EXECUTE["Predej do execution orchestratoru - idempotence, downstream"]
+
+    REQ --> RTBGLOBAL
+    RTBGLOBAL -->|"blokovano nebo nedostupne"| RTBDENYPRE --> AUDITDENY
+    RTBGLOBAL -->|"cisto"| VALTOK --> TOKOK
+    TOKOK -->|"ne"| D401
+    TOKOK -->|"ano"| PRINCIPAL --> RTBPRINCIPAL
+    RTBPRINCIPAL -->|"blokovano nebo nedostupne"| RTBDENYPRINCIPAL --> AUDITDENY
+    RTBPRINCIPAL -->|"cisto"| COARSE --> HASSET
+    HASSET -->|"ne"| DENYSET --> AUDITDENY
+    HASSET -->|"ano"| OPTYPE
+    OPTYPE -->|"tools/list"| LISTFLOW --> LISTFILTER --> LISTRETURN
+    OPTYPE -->|"tools/call"| CALLFLOW --> FINDTOOL --> TOOLEXISTS
+    TOOLEXISTS -->|"ne"| DENYNOTOOL --> AUDITDENY
+    TOOLEXISTS -->|"ano"| RTBTOOL
+    RTBTOOL -->|"blokovano nebo nedostupne"| RTBDENYTOOL --> AUDITDENY
+    RTBTOOL -->|"cisto"| FINE --> ANYRULE
+    ANYRULE -->|"ne"| DEFAULTDENY --> AUDITDENY
+    ANYRULE -->|"ano"| HASDENY
+    HASDENY -->|"ano"| EXPLICITDENY --> AUDITDENY
+    HASDENY -->|"ne"| PICKSPECIFIC --> CONSTRAINTS --> CONSTRAINTOK
+    CONSTRAINTOK -->|"ne"| DENYCONSTRAINT --> AUDITDENY
+    CONSTRAINTOK -->|"ano"| ALLOW --> OBJAUTH --> AUDITALLOW --> EXECUTE
+    AUDITDENY --> TOOLERR

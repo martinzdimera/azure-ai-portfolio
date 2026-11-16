@@ -1,0 +1,26 @@
+stateDiagram-v2
+    [*] --> Uninitialized
+    Uninitialized --> Initializing: prijat pozadavek initialize
+    Initializing --> Ready: prijato notifications initialized, Mcp-Session-Id vydan
+    Initializing --> Closed: neshoda protocolVersion
+    Ready --> Streaming: otevren GET SSE stream nebo dlouhy tool call
+    Streaming --> Ready: stream skoncil, zadne cekajici operace
+    Ready --> Closing: prijato DELETE nebo klient zavrel spojeni
+    Streaming --> Closing: DELETE behem streamovani
+    Closing --> Closed: uklid dokoncen
+    Ready --> Expired: prekrocen idle timeout
+    Streaming --> Expired: prekrocen idle timeout bez keep-alive
+    Expired --> Resuming: klient se pripojil znovu s Last-Event-ID v okne resumability
+    Resuming --> Streaming: replay bufferovanych udalosti z Redis
+    Resuming --> Closed: okno resumability vyprselo, buffer byl smazan
+    Closed --> [*]
+
+    note right of Expired
+        Session Id stale existuje v Redis,
+        replay buffer jeste plati
+    end note
+
+    note right of Closed
+        Klient musi zahajit novy
+        handshake initialize
+    end note

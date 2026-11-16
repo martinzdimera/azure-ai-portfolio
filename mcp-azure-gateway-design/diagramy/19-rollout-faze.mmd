@@ -1,0 +1,24 @@
+flowchart LR
+    PM1["Faze -1 Interoperabilni spike"]
+    GM1{"Gate -1 splneno?"}
+    RETHINK["Zasadni prehodnoceni navrhu"]
+    P0["Faze 0 PoC lokalni"]
+    G0{"Gate 0 splneno?"}
+    FIX0["Oprava, opakovani"]
+    P1["Faze 1 Pilot"]
+    G1{"Gate 1 splneno?"}
+    RB1["Rollback pilotu"]
+    P2["Faze 2 Celofiremne"]
+    G2{"Metriky stabilni?"}
+    RB2["Rollback write nastroju"]
+    STEADY["Steady state"]
+
+    PM1 --> GM1
+    GM1 -->|"selhalo zasadne"| RETHINK -.-> PM1
+    GM1 -->|"splneno"| P0 --> G0
+    G0 -->|"ne"| FIX0 --> P0
+    G0 -->|"ano"| P1 --> G1
+    G1 -->|"ne"| RB1 --> P1
+    G1 -->|"ano"| P2 --> G2
+    G2 -->|"ne"| RB2 --> P2
+    G2 -->|"ano"| STEADY

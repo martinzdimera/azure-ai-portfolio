@@ -1,0 +1,31 @@
+flowchart TB
+    CL["Claude workspace"]
+    CG["ChatGPT Business workspace"]
+    FD["Front Door Premium - WAF, edge"]
+    GH["GitHub - skill repo"]
+    ENTRA["Microsoft Entra ID"]
+    APIM["APIM downstream - existujici"]
+    MON["Azure Monitor - Log Analytics, App Insights"]
+
+    subgraph AZ["Azure subscription - MCP Azure Gateway"]
+        GW["mcp-gateway - Container App - Fastify/Node.js"]
+        ING["skill-ingestor - Container Apps Job"]
+        COS["Cosmos DB for NoSQL - katalog, entitlements"]
+        RED["Azure Managed Redis - cache, session, rate limit"]
+        KV["Key Vault - secrets, certifikaty"]
+        WORM["Storage WORM - audit archiv"]
+    end
+
+    CL -->|"HTTPS MCP"| FD
+    CG -->|"HTTPS MCP"| FD
+    FD -->|"Private Link"| GW
+    GH -->|"webhook push/release"| ING
+    ING -->|"publikuje CatalogVersion"| COS
+    GW -->|"cte katalog, cache"| COS
+    GW -->|"session, rate limit, idempotence"| RED
+    GW -->|"nacte secrets"| KV
+    GW -->|"OAuth token validace / OBO"| ENTRA
+    GW -->|"forward connector call"| APIM
+    GW -->|"audit event"| MON
+    GW -->|"audit WORM zapis"| WORM
+    ING -->|"nacte GitHub App secret"| KV

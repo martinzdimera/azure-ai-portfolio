@@ -1,0 +1,37 @@
+sequenceDiagram
+    actor Autor
+    participant GitHub as GitHub repozitar
+    actor Recenzent
+    participant Webhook as GitHub App webhook
+    participant Ingestor as skill-ingestor Job
+    participant Cosmos as Cosmos DB
+    participant Gateway as gateway repliky
+    participant Reconcile as reconcile job
+
+    Autor->>GitHub: push feature branch, otevre PR
+    GitHub->>Recenzent: pozadavek na review, ctyroci princip
+    Recenzent->>GitHub: schvaleni PR
+    Autor->>GitHub: merge do chranene vetve main
+    GitHub->>Webhook: push event s commit SHA
+    Webhook->>Webhook: overeni HMAC podpisu
+    Webhook->>Ingestor: spusti build job pro dane SHA
+    Ingestor->>GitHub: fetch obsahu repozitare pri danem SHA
+    Ingestor->>Ingestor: validace schema, lint, policy, podpis commitu
+    alt validace selhala
+        Ingestor->>Cosmos: zapis CatalogVersion se stavem Rejected
+        Ingestor-->>Autor: notifikace o zamitnuti
+    else validace uspesna
+        Ingestor->>Ingestor: build, kompilace manifestu, vypocet buildHash
+        Ingestor->>Cosmos: zapis CatalogVersion se stavem Staged a dokumentu tools
+        Ingestor->>Cosmos: atomicky pointer swap, stav Published
+        Cosmos-->>Gateway: change feed notifikace o zmene activePointer
+        Gateway->>Gateway: invalidace cache podle catalogVersionId
+        Ingestor-->>Autor: notifikace o publikaci
+    end
+    loop kazdych 15 minut
+        Reconcile->>GitHub: overeni aktualniho SHA chranenych vetvi
+        Reconcile->>Cosmos: porovnani s posledni zpracovanou CatalogVersion
+        alt SHA se neshoduje s zadnym Published zaznamem
+            Reconcile->>Ingestor: spusti build job jako pojistka proti ztracenemu webhooku
+        end
+    end

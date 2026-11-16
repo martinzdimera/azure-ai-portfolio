@@ -1,0 +1,43 @@
+flowchart TD
+    START["POST na /mcp nebo /mcp/workspaceSlug"] --> ORIGIN{"Hlavicka Origin pritomna a povolena"}
+    ORIGIN -- "ne" --> E403["403 Forbidden<br/>telo muze byt JSON-RPC error bez id"]
+    ORIGIN -- "ano" --> PARSE{"Telo je platny JSON-RPC ramec"}
+    PARSE -- "ne" --> E32700["400 + JSON-RPC -32700 Parse error"]
+    PARSE -- "ano" --> METAV{"Pritomno _meta klic io.modelcontextprotocol/protocolVersion"}
+
+    METAV -- "ano" --> HDR{"Hlavicka MCP-Protocol-Version pritomna"}
+    HDR -- "ne" --> E32020A["400 + -32020 HeaderMismatch<br/>chybi povinna hlavicka"]
+    HDR -- "ano" --> MATCH{"Hodnota hlavicky se rovna hodnote v _meta"}
+    MATCH -- "ne" --> E32020B["400 + -32020 HeaderMismatch<br/>hlavicka neodpovida telu"]
+    MATCH -- "ano" --> MIRROR{"Mcp-Method a pripadne Mcp-Name odpovidaji telu"}
+    MIRROR -- "ne" --> E32020C["400 + -32020 HeaderMismatch"]
+    MIRROR -- "ano" --> SUPB{"Verze je v seznamu supportedVersions"}
+    SUPB -- "ne" --> E32022["400 + -32022 UnsupportedProtocolVersion<br/>data.supported a data.requested"]
+    SUPB -- "ano" --> CAPS{"clientCapabilities pritomne a dostacujici"}
+    CAPS -- "chybi povinne pole" --> E32602["400 + -32602 Invalid params"]
+    CAPS -- "chybi schopnost" --> E32021["400 + -32021 MissingRequiredClientCapability"]
+    CAPS -- "ok" --> ERAB["StatelessAdapter<br/>era B 2026-07-28"]
+
+    METAV -- "ne" --> ISINIT{"method je initialize"}
+    ISINIT -- "ano" --> NEGA{"Pozadovana protocolVersion je podporovana"}
+    NEGA -- "ano" --> ERAA["LegacyHandshakeAdapter<br/>vrati stejnou verzi a MCP-Session-Id"]
+    NEGA -- "ne" --> DOWN["Vrati nejvyssi vlastni podporovanou verzi<br/>a seznam verzi v instructions"]
+    DOWN --> ERAA
+    ISINIT -- "ne" --> SESS{"Hlavicka MCP-Session-Id pritomna a platna"}
+    SESS -- "ano" --> ERAA
+    SESS -- "neplatna nebo vyprsela" --> E404["404 Not Found<br/>klient zahaji novy initialize"]
+    SESS -- "ne" --> LEGHDR{"Hlavicka MCP-Protocol-Version pritomna"}
+    LEGHDR -- "ano" --> ERAA
+    LEGHDR -- "ne" --> FALLBACK["Predpoklad verze 2025-03-26<br/>pokud je povoleno konfiguraci"]
+    FALLBACK --> SUPA{"Verze je v seznamu podporovanych"}
+    SUPA -- "ano" --> ERAA
+    SUPA -- "ne" --> E400["400 Bad Request<br/>nepodporovana verze protokolu"]
+
+    ERAA --> CANON["Normalizace na CanonicalRequest"]
+    ERAB --> CANON
+    CANON --> CORE["Jadro - identity, authz, catalog, execution, audit"]
+    CORE --> DENORM["Denormalizace CanonicalResult zpet do tvaru dane ery"]
+
+    GETDEL["GET nebo DELETE na /mcp"] --> ERACHK{"Je pro dany workspace povolena era A"}
+    ERACHK -- "ano" --> SSE["GET otevre SSE stream<br/>DELETE ukonci session"]
+    ERACHK -- "ne" --> E405["405 Method Not Allowed"]

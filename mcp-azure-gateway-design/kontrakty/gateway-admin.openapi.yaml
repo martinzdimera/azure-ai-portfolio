@@ -1,0 +1,325 @@
+openapi: 3.1.0
+info:
+  title: MCP-Azure Gateway — administrativní a webhook API
+  version: "1.0.0"
+  description: >-
+    Formální kontrakt pro administrativní, health a discovery endpointy gateway,
+    přesně dle 05-api-a-protokoly.md §2 (tabulka HTTP povrchu). CI validuje tento
+    soubor proti té tabulce — rozchod mezi nimi shodí build (viz README.md v tomto
+    adresáři a 08-provoz-observabilita-rollout.md §8).
+
+    POST /mcp[/{workspaceSlug}] (a odpovídající GET/DELETE pro éru A) zde záměrně
+    NENÍ popsán: je to jediný JSON-RPC endpoint gateway, jehož tvar požadavku a
+    odpovědi určuje metoda uvnitř JSON-RPC těla (tools/list, tools/call, ...), ne
+    HTTP cesta/metoda jako u REST zdrojů, které OpenAPI modeluje. Jeho kontrakt
+    dávají dohromady MCP specifikace (JSON-RPC obálka a chybová taxonomie, viz
+    05-api-a-protokoly.md §3) a schéma jednotlivých nástrojů v katalogu
+    (inputSchema/outputSchema, viz skill-manifest.schema.json) — ne jeden statický
+    OpenAPI dokument, který by musel být přegenerován při každé změně katalogu.
+servers:
+  - url: https://mcp.contoso.com
+    description: Produkce (kanonický host dle K1)
+tags:
+  - name: catalog-admin
+    description: Publikace a rollback katalogové verze (ADR-012). Vyžaduje app roli Mcp.CatalogAdmin.
+  - name: webhooks
+    description: Vstupní bod pro GitHub App webhook (ADR-011).
+  - name: health
+    description: Health a readiness probes, dostupné jen z VNet/Front Door.
+  - name: discovery
+    description: RFC 9728 Protected Resource Metadata, veřejně dostupné bez autentizace.
+paths:
+  /admin/catalog/publish:
+    post:
+      tags: [catalog-admin]
+      operationId: publishCatalogVersion
+      summary: Publikuje CatalogVersion jako aktivní pro dané workspacy
+      description: >-
+        Atomický přepis activePointer (ADR-012). Idempotentní vůči opakovanému
+        volání se stejným Idempotency-Key.
+      security:
+        - entraBearer: [mcp.admin]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CatalogPublishRequest'
+      responses:
+        "200":
+          description: Publikace proběhla (nebo idempotentně zopakována).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogPointerResult'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "409":
+          description: Konflikt pointeru — jiná publikace mezitím activePointer změnila.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminErrorBody'
+        "422":
+          description: catalogVersionId neexistuje nebo neprošel validací při buildu.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminErrorBody'
+
+  /admin/catalog/rollback:
+    post:
+      tags: [catalog-admin]
+      operationId: rollbackCatalogVersion
+      summary: Přepne activePointer daného workspace na dřívější CatalogVersion
+      security:
+        - entraBearer: [mcp.admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CatalogRollbackRequest'
+      responses:
+        "200":
+          description: Rollback proveden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogPointerResult'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          description: workspace nebo toVersionId neexistuje.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminErrorBody'
+
+  /webhooks/github:
+    post:
+      tags: [webhooks]
+      operationId: receiveGithubWebhook
+      summary: Přijme GitHub App webhook (push/release na skill repozitáři)
+      description: >-
+        Autentizace výhradně přes HMAC SHA-256 podpis, ne Bearer token —
+        endpoint volá GitHub, ne uživatel/klient MCP.
+      security:
+        - githubHmac: []
+      parameters:
+        - name: X-Hub-Signature-256
+          in: header
+          required: true
+          schema: { type: string, pattern: '^sha256=[0-9a-f]{64}$' }
+        - name: X-GitHub-Event
+          in: header
+          required: true
+          schema: { type: string }
+        - name: X-GitHub-Delivery
+          in: header
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Syrový GitHub webhook payload (tvar dle X-GitHub-Event), gateway čte jen pole potřebná k identifikaci commitu/release.
+      responses:
+        "202":
+          description: Přijato ke zpracování skill-ingestorem (asynchronně).
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [accepted]
+                properties:
+                  accepted: { type: boolean, const: true }
+        "401":
+          description: Neplatný nebo chybějící HMAC podpis.
+        "422":
+          description: Platný podpis, ale payload nelze zpracovat (neočekávaný event typ apod.).
+
+  /healthz:
+    get:
+      tags: [health]
+      operationId: getHealth
+      summary: Liveness probe
+      security: []
+      responses:
+        "200":
+          description: Proces běží.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [status]
+                properties:
+                  status: { type: string, const: ok }
+        "503":
+          description: Proces je nutné restartovat.
+
+  /readyz:
+    get:
+      tags: [health]
+      operationId: getReadiness
+      summary: Readiness probe — stav závislostí (Cosmos, Redis, JWKS cache)
+      security: []
+      responses:
+        "200":
+          description: Gateway je připravena obsluhovat provoz.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadinessBody'
+        "503":
+          description: Alespoň jedna kritická závislost není dostupná.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadinessBody'
+
+  /.well-known/oauth-protected-resource:
+    get:
+      tags: [discovery]
+      operationId: getProtectedResourceMetadataDefault
+      summary: RFC 9728 Protected Resource Metadata pro výchozí workspace
+      security: []
+      responses:
+        "200":
+          description: PRM dokument.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProtectedResourceMetadata'
+
+  /.well-known/oauth-protected-resource/mcp/{workspaceSlug}:
+    get:
+      tags: [discovery]
+      operationId: getProtectedResourceMetadataForWorkspace
+      summary: RFC 9728 Protected Resource Metadata pro konkrétní workspace
+      security: []
+      parameters:
+        - name: workspaceSlug
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: PRM dokument (stejné resource jako výchozí, jiné scopes_supported/resource_documentation — viz K1).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProtectedResourceMetadata'
+        "404":
+          description: workspaceSlug neexistuje.
+
+components:
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      schema: { type: string }
+      description: Volitelný klíč pro bezpečné opakování administrativní operace.
+  securitySchemes:
+    entraBearer:
+      type: oauth2
+      description: >-
+        Microsoft Entra ID jako jediný Authorization Server (ADR-005). Admin
+        endpointy vyžadují app roli Mcp.CatalogAdmin (K2) v access tokenu navíc
+        ke scope mcp.admin.
+      flows:
+        clientCredentials:
+          tokenUrl: https://login.microsoftonline.com/{tenantId}/oauth2/v2.0/token
+          scopes:
+            mcp.admin: Administrativní operace nad katalogem (publish/rollback)
+    githubHmac:
+      type: apiKey
+      in: header
+      name: X-Hub-Signature-256
+      description: HMAC SHA-256 podpis těla požadavku tajným klíčem GitHub App (ADR-011), ne OAuth token.
+  schemas:
+    CatalogPublishRequest:
+      type: object
+      additionalProperties: false
+      required: [catalogVersionId, workspaces]
+      properties:
+        catalogVersionId:
+          type: string
+          description: "id = gitSha-buildHash (ADR-012)."
+        workspaces:
+          type: array
+          minItems: 1
+          items: { type: string }
+    CatalogRollbackRequest:
+      type: object
+      additionalProperties: false
+      required: [workspace, toVersionId]
+      properties:
+        workspace: { type: string }
+        toVersionId: { type: string }
+    CatalogPointerResult:
+      type: object
+      additionalProperties: false
+      required: [previous, current]
+      properties:
+        previous: { type: string }
+        current: { type: string }
+    AdminErrorBody:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error: { type: string }
+        detail: { type: string }
+    ReadinessBody:
+      type: object
+      additionalProperties: false
+      required: [status, dependencies]
+      properties:
+        status: { enum: [ready, degraded, not_ready] }
+        dependencies:
+          type: object
+          additionalProperties:
+            enum: [ok, degraded, unavailable]
+    ProtectedResourceMetadata:
+      type: object
+      description: RFC 9728 §2 Protected Resource Metadata.
+      required: [resource]
+      properties:
+        resource:
+          type: string
+          format: uri
+          description: "Kanonická URL MCP serveru — K1: vždy https://mcp.contoso.com/mcp, i na per-workspace cestě."
+        authorization_servers:
+          type: array
+          items: { type: string, format: uri }
+        scopes_supported:
+          type: array
+          items: { type: string }
+        resource_documentation:
+          type: string
+          format: uri
+  responses:
+    Unauthorized:
+      description: Chybějící nebo neplatný bearer token.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AdminErrorBody'
+    Forbidden:
+      description: Token platný, ale chybí app role Mcp.CatalogAdmin.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AdminErrorBody'

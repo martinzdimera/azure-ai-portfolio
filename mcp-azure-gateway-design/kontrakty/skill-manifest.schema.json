@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://acme.example/schemas/mcp-tool-manifest/v1.json",
+  "title": "ACME MCP Tool Manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "mcp.acme.example/v1" },
+    "kind": { "enum": ["Tool", "ToolSet"] },
+    "metadata": {
+      "type": "object", "additionalProperties": false,
+      "required": ["name", "title", "owner", "domain"],
+      "properties": {
+        "name":   { "type": "string", "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+){1,5}$", "maxLength": 64 },
+        "title":  { "type": "string", "minLength": 3, "maxLength": 60 },
+        "owner":  { "type": "string", "format": "email" },
+        "domain": { "enum": ["crm", "finance", "sales", "hr", "itsm", "kb"] },
+        "tags":   { "type": "array", "maxItems": 10, "items": { "type": "string", "pattern": "^[a-z0-9-]{2,32}$" } }
+      }
+    },
+    "spec": {
+      "type": "object", "additionalProperties": false,
+      "required": ["description", "riskTier", "entitlementTags", "annotations", "input", "binding"],
+      "properties": {
+        "description": { "type": "string", "minLength": 80, "maxLength": 600 },
+        "riskTier": { "enum": ["low", "medium", "high", "critical"] },
+        "entitlementTags": {
+          "type": "array", "minItems": 1, "maxItems": 5,
+          "items": { "type": "string", "pattern": "^[a-z]+\\.[a-z]+$" }
+        },
+        "annotations": {
+          "type": "object", "additionalProperties": false,
+          "required": ["readOnlyHint", "destructiveHint", "idempotentHint", "openWorldHint"],
+          "properties": {
+            "readOnlyHint":    { "type": "boolean" },
+            "destructiveHint": { "type": "boolean" },
+            "idempotentHint":  { "type": "boolean" },
+            "openWorldHint":   { "type": "boolean" }
+          }
+        },
+        "input":  { "type": "object", "required": ["schema"], "additionalProperties": false,
+                    "properties": { "schema": { "$ref": "#/$defs/jsonSchemaObject" } } },
+        "output": { "type": "object", "required": ["schema"], "additionalProperties": false,
+                    "properties": { "schema": { "$ref": "#/$defs/jsonSchemaObject" } } },
+        "binding": {
+          "type": "object", "additionalProperties": false, "minProperties": 1, "maxProperties": 1,
+          "properties": {
+            "apim": {
+              "type": "object", "additionalProperties": false,
+              "required": ["apiId", "operationId", "method", "pathTemplate", "timeoutMs", "auth"],
+              "properties": {
+                "apiId":        { "type": "string", "pattern": "^[a-z0-9-]{3,64}$" },
+                "operationId":  { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9]{2,63}$" },
+                "method":       { "enum": ["GET", "POST", "PUT", "PATCH", "DELETE"] },
+                "pathTemplate": { "type": "string", "pattern": "^/[A-Za-z0-9/_{}.-]{1,256}$" },
+                "timeoutMs":    { "type": "integer", "minimum": 1000, "maximum": 30000 },
+                "auth": {
+                  "type": "object", "required": ["mode"],
+                  "properties": {
+                    "mode":      { "enum": ["obo", "managed_identity", "subscription_key"] },
+                    "scope":     { "type": "string", "pattern": "^api://[A-Za-z0-9./_-]+$" },
+                    "resource":  { "type": "string", "format": "uri" },
+                    "secretRef": { "type": "string", "pattern": "^[a-zA-Z0-9-]{1,127}$" }
+                  },
+                  "allOf": [
+                    { "if": { "properties": { "mode": { "const": "obo" } } }, "then": { "required": ["scope"] } },
+                    { "if": { "properties": { "mode": { "const": "managed_identity" } } }, "then": { "required": ["resource"] } },
+                    { "if": { "properties": { "mode": { "const": "subscription_key" } } }, "then": { "required": ["secretRef"] } }
+                  ]
+                },
+                "requestMapping":  { "type": "string", "maxLength": 4000 },
+                "responseMapping": { "type": "string", "maxLength": 4000 }
+              }
+            },
+            "transform": {
+              "type": "object", "additionalProperties": false,
+              "required": ["engine", "source", "expression"],
+              "properties": {
+                "engine":     { "enum": ["jsonata", "jmespath"] },
+                "source":     { "type": "string", "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+){1,5}$" },
+                "expression": { "type": "string", "minLength": 3, "maxLength": 4000 }
+              }
+            }
+          }
+        },
+        "deprecation": {
+          "type": "object", "additionalProperties": false, "required": ["since", "removeAfter"],
+          "properties": {
+            "since":      { "type": "string", "format": "date" },
+            "removeAfter":{ "type": "string", "format": "date" },
+            "replacedBy": { "type": "string", "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+){1,5}$" }
+          }
+        }
+      },
+      "allOf": [
+        { "if": { "properties": { "annotations": { "properties": { "readOnlyHint": { "const": true } } } } },
+          "then": { "properties": { "annotations": { "properties": { "destructiveHint": { "const": false } } } } } },
+        { "if": { "properties": { "riskTier": { "enum": ["high", "critical"] } } },
+          "then": { "properties": { "input": { "properties": { "schema": {
+                      "properties": { "properties": { "required": ["confirm"] } } } } } } } },
+        { "if": { "properties": { "annotations": { "properties": { "destructiveHint": { "const": true } } } } },
+          "then": { "properties": { "input": { "properties": { "schema": {
+                      "properties": { "properties": { "required": ["confirm"] } } } } } } } }
+      ]
+    }
+  },
+  "$defs": {
+    "jsonSchemaObject": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "const": "object" },
+        "additionalProperties": { "const": false },
+        "properties": { "type": "object", "minProperties": 0, "maxProperties": 25 },
+        "required": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["type", "additionalProperties"]
+    }
+  }
+}

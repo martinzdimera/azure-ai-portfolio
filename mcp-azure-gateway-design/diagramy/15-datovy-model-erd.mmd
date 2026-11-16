@@ -1,0 +1,169 @@
+erDiagram
+    CATALOG_VERSION ||--o{ TOOL : contains
+    CATALOG_VERSION ||--o{ SKILL_MANIFEST : built_from
+    SKILL_MANIFEST ||--o| TOOL : compiles_to
+    WORKSPACE }o--|| CATALOG_VERSION : pins
+    WORKSPACE ||--o{ WORKSPACE_BINDING : grants_access_via
+    WORKSPACE ||--o{ TOOL_USAGE_STATS : aggregates
+    WORKSPACE ||--o{ IDEMPOTENCY_KEY : deduplicates
+    WORKSPACE ||--o{ RATE_LIMIT_BUCKET : throttles
+    WORKSPACE ||--o{ AUDIT_EVENT : scopes
+    TOOL ||--o{ ENTITLEMENT : targeted_by
+    TOOL ||--o{ POLICY_DECISION : evaluated_for
+    TOOL ||--o{ AUDIT_EVENT : invoked_as
+    TOOL ||--o{ RATE_LIMIT_BUCKET : limited_by
+    ENTITLEMENT ||--o{ POLICY_DECISION : produces
+    AUDIT_EVENT }o--|| AUDIT_CHECKPOINT : summarized_by
+    AUDIT_EVENT ||--o| AUDIT_OUTBOX : staged_via
+    AUDIT_CHAIN_CURSOR ||--o{ AUDIT_EVENT : sequences
+
+    CATALOG_VERSION {
+        string id PK
+        string tenantId
+        string status
+        datetime createdAt
+        string sourceRefCommitSha
+        int toolCount
+        string buildHash
+        string signature
+        int schemaVersion
+    }
+
+    TOOL {
+        string id PK
+        string catalogVersionId FK
+        string name
+        string kind
+        string riskTier
+        json inputSchema
+        json outputSchema
+        json annotations
+        string sourceManifestRef FK
+        int schemaVersion
+    }
+
+    SKILL_MANIFEST {
+        string id PK
+        string catalogVersionId FK
+        string sourceBlobSha
+        string rawChecksum
+        string toolName
+        json validationResult
+        datetime ingestedAt
+    }
+
+    WORKSPACE {
+        string slug PK
+        string tenantId
+        string clientType
+        string audience
+        string pinnedCatalogVersion FK
+        json protocolEras
+        json limits
+    }
+
+    WORKSPACE_BINDING {
+        string id PK
+        string workspaceSlug FK
+        string principalSelectorType
+        string principalSelectorValue
+        string status
+        datetime boundAt
+        string boundBy
+    }
+
+    ENTITLEMENT {
+        string id PK
+        string tenantId
+        string principalSelectorType
+        string principalSelectorValue
+        json toolSelector
+        string effect
+        json constraints
+        int priority
+        datetime validFrom
+        datetime validTo
+    }
+
+    POLICY_DECISION {
+        string id PK
+        string tenantId
+        string principalOid
+        string toolName FK
+        string decision
+        string matchedRuleId FK
+        string reason
+        datetime ts
+        int ttl
+    }
+
+    IDEMPOTENCY_KEY {
+        string key PK
+        string tenantId
+        string workspaceSlug FK
+        string principalOid
+        string toolName FK
+        string status
+        string resultHash
+        datetime completedAt
+        int ttlSeconds
+    }
+
+    RATE_LIMIT_BUCKET {
+        string key PK
+        string workspaceSlug FK
+        string principalOid
+        string toolName FK
+        int tokens
+        datetime lastRefillTs
+    }
+
+    AUDIT_EVENT {
+        string eventId PK
+        string traceId
+        string workspaceSlug FK
+        string toolName FK
+        json principal
+        json decision
+        json execution
+        string prevHash
+        string hash
+    }
+
+    AUDIT_CHECKPOINT {
+        string id PK
+        string tenantId
+        string workspaceSlug FK
+        string date
+        string rootHash
+        string prevCheckpointHash
+        string verificationStatus
+    }
+
+    TOOL_USAGE_STATS {
+        string id PK
+        string workspaceSlug FK
+        string toolName FK
+        string periodStart
+        string periodGranularity
+        int callCount
+        int deniedCount
+        int p95DurationMs
+    }
+
+    AUDIT_OUTBOX {
+        string id PK
+        string tenantId
+        string dispatchStatus
+        int attempts
+        datetime createdAt
+        int ttl
+    }
+
+    AUDIT_CHAIN_CURSOR {
+        string id PK
+        string tenantId
+        string lastHash
+        string lastEventId
+        datetime updatedAt
+    }

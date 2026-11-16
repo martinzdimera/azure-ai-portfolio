@@ -1,0 +1,36 @@
+sequenceDiagram
+    autonumber
+    participant EX as Gateway execution
+    participant TS as TokenService
+    participant RC as Redis token cache
+    participant MI as Managed Identity endpoint
+    participant E as Microsoft Entra ID token endpoint
+    participant AP as Azure API Management
+
+    EX->>TS: acquireDownstreamToken pro principal oid a scope apim
+    TS->>TS: Vypocet cache klice z hash oid, tid, scope a apiId
+    TS->>RC: GET klic
+    alt Cache hit a plati vic nez 300 sekund
+        RC-->>TS: Ulozeny access_token a expiresAt
+        TS-->>EX: Access token bez volani Entra
+    else Cache miss nebo blizka expirace
+        RC-->>TS: Prazdno nebo token pred expiraci
+        TS->>MI: Zadost o client assertion pres federovanou managed identitu
+        MI-->>TS: Client assertion JWT
+        TS->>E: POST token grant_type jwt-bearer, assertion prichozi token, requested_token_use on_behalf_of, scope
+        alt Vymena uspesna
+            E-->>TS: Novy access_token pro APIM, expires_in, pripadne refresh_token
+            TS->>RC: SET klic s TTL expires_in minus 300 sekund
+            TS-->>EX: Access token
+        else AADSTS50076 nebo interaction_required
+            E-->>TS: Chyba vyzadujici interakci uzivatele
+            TS-->>EX: Chyba DownstreamAuthRequired
+            EX-->>EX: Prevod na tool error s pokynem znovu pripojit connector
+        else AADSTS65001 chybejici consent
+            E-->>TS: Chyba chybejiciho souhlasu na downstream API
+            TS-->>EX: Chyba DownstreamConsentMissing
+        end
+    end
+    EX->>AP: Volani operace s Authorization Bearer downstream token
+    AP-->>EX: Odpoved backendu
+    Note over TS,RC: Invalidace cache pri 401 z APIM a jeden opakovany pokus s cerstvym tokenem

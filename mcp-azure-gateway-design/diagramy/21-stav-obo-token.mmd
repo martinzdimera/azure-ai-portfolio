@@ -1,0 +1,19 @@
+stateDiagram-v2
+    [*] --> None
+    None --> Requesting: prvni volani nastroje vyzadujiciho downstream OBO
+    Requesting --> Cached: Entra vratila platny token
+    Requesting --> Invalid: Entra odmitla vymenu OBO
+    Cached --> Refreshing: blizi se expiresOn minus 120s, proaktivni obnova
+    Cached --> Invalid: CAE udalost revokovala opravneni pred expiraci
+    Refreshing --> Cached: uspesna obnova, novy token ulozen
+    Refreshing --> Invalid: obnova selhala
+    Invalid --> None: dalsi pozadavek na tuto dvojici principal a audience zahaji novy cyklus
+
+    note right of Cached
+        Sifrovany token v Redis,
+        TTL do expiresOn minus 120s
+    end note
+    note right of Invalid
+        Terminalni pro tuto polozku,
+        tool call selze jako toolError
+    end note

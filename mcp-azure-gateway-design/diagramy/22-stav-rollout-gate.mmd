@@ -1,0 +1,58 @@
+stateDiagram-v2
+    [*] --> PhaseMinus1
+
+    PhaseMinus1 --> GateMinus1: spike nasazen proti realnym Claude i ChatGPT workspacum
+
+    state GateMinus1 <<choice>>
+    GateMinus1 --> PhaseMinus1: drobna oprava, spike se opakuje se stejnou architekturou
+    GateMinus1 --> RethinkDesign: zasadni predpoklad neplati, navrh se musi prepracovat
+    GateMinus1 --> Phase0: kriteria Gate -1 splnena
+
+    RethinkDesign --> PhaseMinus1: navrh prepracovan, spike se opakuje s upravenou architekturou
+
+    Phase0 --> Gate0: PoC dokoncen, zahajeno vyhodnoceni
+
+    state Gate0 <<choice>>
+    Gate0 --> Phase0: kriteria Gate 0 nesplnena, oprava a opakovani
+    Gate0 --> Phase1Pilot: kriteria Gate 0 splnena
+
+    Phase1Pilot --> Gate1: uplynula minimalni doba pilotu, zahajeno vyhodnoceni
+
+    state Gate1 <<choice>>
+    Gate1 --> Phase1Pilot: kriteria Gate 1 nesplnena, rollback pilotu se zuzenym tool setem
+    Gate1 --> Phase2Rollout: kriteria Gate 1 splnena
+
+    Phase2Rollout --> Phase2Rollout: rollback write toolsetu pro jednu domenu nebo roli, ostatni nedotceny
+    Phase2Rollout --> Steady: metriky stabilni napric vsemi uvolnenymi rolemi a domenami
+
+    Steady --> Phase2Rollout: regrese SLO nebo bezpecnostni incident vazany na write nastroj, zuzeni rozsahu
+
+    note right of GateMinus1
+        Meritelna kriteria Gate -1: realny
+        Claude i realny ChatGPT Business
+        workspace pripojeny, OAuth bez DCR
+        prosel, protokolova revize a
+        skutecne timeouty zmereny a zapsany
+    end note
+
+    note right of Gate0
+        Meritelna kriteria Gate 0: conformance
+        harness pro obe ery, end-to-end skill
+        i connector nastroj, bezpecnostni
+        checklist ADR-013
+    end note
+
+    note right of Gate1
+        Meritelna kriteria Gate 1: SLO dodrzeno
+        min. 2 tydny, 0 Sev1 incidentu, hash
+        chain bez mezery, rollback katalogu
+        overen na datech pilotu
+    end note
+
+    note right of Phase2Rollout
+        Postupne vlny per domena: nejprve
+        rozsireni read-only pristupu, pak write
+        nastroje domena po domene, kazda vlna
+        vlastnim tempem se stejnym principem
+        mer-nez-rozsir
+    end note

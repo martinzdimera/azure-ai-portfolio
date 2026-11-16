@@ -1,0 +1,19 @@
+stateDiagram-v2
+    [*] --> Received
+    Received --> VersionChecked: parsovani _meta a hlavicek MCP-Protocol-Version, Mcp-Method, Mcp-Name
+    VersionChecked --> Failed: HeaderMismatch nebo UnsupportedProtocolVersion
+    VersionChecked --> Authenticated: verze prijata
+    Authenticated --> Failed: chybi nebo neplatny token
+    Authenticated --> Authorized: PolicyEngine vyhodnotil pozadavek
+    Authorized --> Denied: politika zamitla
+    Authorized --> Executing: povoleno
+    Denied --> Completed: vraceno jako isError v obsahu vysledku
+    Executing --> Completed: uspech, toolError, timeout nebo cancelled jako vysledek
+    Executing --> Failed: protokolova chyba mimo tool error
+    Completed --> [*]
+    Failed --> [*]
+
+    note right of Received
+        Zadny perzistentni stav mezi
+        pozadavky, kazdy request samostatny
+    end note

@@ -4,12 +4,12 @@ Every document here is a sanitized public edition, built from a versioned source
 checked by an automated gate before publication. The gate is fail-closed: a single
 failed check blocks the upload.
 
-**Package:** v1.8 · **Built:** 2026-09-16 · **Gate result:** 9/9 passed
+**Package:** v1.9 · **Built:** 2026-11-16 · **Gate result:** 10/10 PDF documents passed
 
 | # | File | Version | Pages | SHA-256 |
 |---|---|---|---:|---|
 | 1 | `UDF2_ARCHITECTURE_v3.1-public.pdf` | v3.1 Public Edition | 26 | `09e1965f4fd584ec0db3ece6ed6df94c18954d53b555029b54284fac34316c50` |
-| 2 | `AutoDoc_FW_ARCHITECTURE_v3-public.pdf` | v3 Public Edition | 26 | `cb2a179a1859d3526d61ebb0b6e71778e07b28fbae9ed13e89a9a31c9a04742d` |
+| 2 | `AutoDoc_FW_ARCHITECTURE_v3-public.pdf` | v3 Public Edition (corrected edition) | 25 | `c1ffcc447543db32dd82a146ed849a0c8a12f27e09867601996549fa3ef44a5a` |
 | 3 | `FactoryFW_ASBUILT_v1-public.pdf` | v1 Public Edition | 15 | `b401a5e16f97fc40d953c0c162bf92bb086b1bb237ee8529b1fe6d42fda4c9dd` |
 | 4 | `fleetguard-case-sheet-v2.4.pdf` | v2.4 | 3 | `408fc2939ca9b000bba564a29792da01fa3b274e12911586d9fcd6da725404db` |
 | 5 | `Deep-Research-Martins_v2.2-public-EN.pdf` | v2.1.2 + v2.2 wave 1 | 10 | `1517cb9458efcf12b07496a3c66c41c026f22a395bf4bc9efb36675dd571f26f` |
@@ -17,8 +17,18 @@ failed check blocks the upload.
 | 7 | `hyperv-recovery-case-sheet-v1.1.pdf` | v1.1 | 5 | `dad7f20bb3b25bfb30f95c5d95e4b4865c30ddfe654ecbd0326f0e360b9afa18` |
 | 8 | `hyperv-phase2-case-sheet-v1.0.pdf` | v1.0 (phase in progress) | 5 | `029e420558bbab60e885ec8182d672e0fd626bba7d7355a78b8d385878d41e91` |
 | 9 | `fleetguard-delivery-mechanics-v1.0.pdf` | v1.0 Public Edition | 12 | `1e6dbcb3f443bfe999d3ee231eba5f0225c84db6aff59459fce67c370c20e600` |
+| 10 | `Deep-Research-apparatus-reference-v3.0-public-EN.pdf` | v3.0 (English) | 15 | `4f2f507d6f4b52ba5b7dfab9f080fe0659af0193a0b708df485fc198d11401ee` |
+| 11 | `mcp-azure-gateway-design/` | v1.0 design documentation (Draft), 62 files, 3862791 bytes | — | `index.html`: `3e6131a4dcaa59fef0de1616d737c1c8680a985fc2ff6424ea5fd2536e614e34`; file list: `917754dbdaa9d43767d74aaa57bb3137ad4fb0cd002933f63fd6e2863c42e07b` |
 
 Verify any file with `shasum -a 256 <file>`.
+Verify the folder (file list) with `cd mcp-azure-gateway-design && find . -type f -print0 | LC_ALL=C sort -z | xargs -0 shasum -a 256 | shasum -a 256`.
+
+Item 2 is a corrected edition and an exception to rule 2 below: a leftover internal editing note
+on page 1 was removed and the document was rebuilt from source, which also regenerated layout and
+diagram rendering (25 pages instead of 26); its version label stays v3. Item 11 is a folder of design
+documentation published as written (Markdown, Mermaid/SVG diagrams, machine-readable contracts and
+one HTML file). The PDF checks below do not apply to it; it was checked for client identifiers, and
+its HTML file for externally loaded resources.
 
 ## Pre-publication checks
 
