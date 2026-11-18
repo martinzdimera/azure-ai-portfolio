@@ -68,18 +68,26 @@ Documents: [Architecture reference](AutoDoc_FW_ARCHITECTURE_v3-public.pdf)
 
 ### Delivery framework and what it has built
 
-**Factory FW** — Control framework for analysing, designing and delivering software products with AI agents. A human approves the design at four gates; delivery then runs as an explicit state machine in which separate agents write, check and independently review each stage, with all state recorded in one file. Its purpose is delivery quality without hands-on supervision: once the owner relaxes pre-flight and records an autonomy approval, stages run unattended within budget and iteration limits, and security-critical stages stay human-gated. Implemented as a Node CLI. FleetGuard is the measured pilot documented in the reference.
+**Factory FW** — A framework that coordinates software production through design artifacts and a persisted delivery lifecycle. AI agents perform artifact authoring, implementation and review; the owner retains approval and risk decisions. Its stated objective is delivery quality without continuous supervision. The interactive layer supplies the brief, domain model, architecture, safety material, contracts and roadmap; the delivery layer is implemented as a Node CLI. The reference covers system context, building blocks, runtime view, architecture decisions, quality requirements, and risks and technical debt.
 
-Documents: [As-built reference](FactoryFW_ASBUILT_v1-public.pdf)
+Documents: [Architecture reference v2.0](FactoryFW_ARCHITECTURE_REFERENCE_v2.0-public.pdf)
 
 <details><summary>What the document covers</summary>
 
-- Two-layer architecture as-built — Design approvals, delivery transitions and shared lifecycle state.
-- Safety and quality mechanisms — Scope checks, autonomy approval, recovery and structured verdicts.
-- From design to implementation — Architecture changes and dispositions of pre-implementation review findings.
-- Validation — Framework test records, process exercises and measured pilot evidence.
-- Deployment model — Pinned framework installation, version records and retained project state.
-- Lessons Learned — Operational lessons from delivery, review and framework hardening.
+- Document control and summary — Notation and reading routes, executive summary.
+- Goals, stakeholders and concerns — Purpose and quality goals, stakeholders and concerns.
+- Constraints — Runtime and repository constraints, authority and assurance constraints.
+- Context and scope — System context, scope and external responsibilities.
+- Solution strategy — Quality goals and mechanisms, trade-offs and independence.
+- Building blocks — Two-layer container model, design roles, delivery coordination components, supporting components.
+- Runtime view — Design approvals, stage transitions, loop decisions, recovery, lease, roadmap pinning.
+- Deployment view — Bundle lifecycle, vendoring, project persistence, execution hosts, emitted controls.
+- Cross-cutting concepts — State contracts, concurrency, safety, authority, isolation, resource limits, observability.
+- Architecture decisions — ADR-001 to ADR-006: design authority, state mutation, evidence, vendoring, isolation.
+- Quality requirements — Quality scenarios, validation evidence and its limits.
+- Risks and technical debt — Public limitation dispositions, additional implementation limits.
+- View correspondence and traceability — Viewpoint register, cross-view correspondences, known inconsistencies and evidence policy.
+- Glossary — Terms and abbreviations, attribution and terminology.
 
 </details>
 

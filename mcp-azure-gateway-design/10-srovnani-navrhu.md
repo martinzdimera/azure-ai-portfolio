@@ -1,13 +1,13 @@
 # 10 — Srovnání dvou nezávislých architektonických návrhů
 
 **Verze:** 1.0 · **Datum:** 2026-09-17 · **Stav:** Posudek
-**Předmět:** Návrh A = tato dokumentace (`00`–`09`). Návrh B = `Codex/architektura/` (`README.md`, `00-business-kontext.md` až `07-zdroje-a-rozhodnuti.md`, `kontrakty/`, `validace/`, `diagramy/`).
+**Předmět:** Návrh A = tato dokumentace (`00`–`09`). Návrh B = druhý, nezávisle vypracovaný návrh téhož zadání (není součástí této dokumentace).
 
 ---
 
 ## 1. Účel a metoda
 
-Na totéž zadání (`MCP-Azure_task_description.md`) vznikly nezávisle dva kompletní architektonické návrhy. Tento dokument je porovnává. **Není to soutěž a nemá vítěze.** Dva nezávislé návrhy téhož zadání jsou vzácná příležitost: tam, kde se shodnou, je pravděpodobnější, že rozhodnutí je robustní a ne jen zvyk jednoho autora; tam, kde se rozejdou, leží buď skutečný kompromis, který musí rozhodnout zadavatel, nebo slepé místo jednoho z nich. Cílem je najít obojí.
+Na totéž zadání vznikly nezávisle dva kompletní architektonické návrhy. Tento dokument je porovnává. **Není to soutěž a nemá vítěze.** Dva nezávislé návrhy téhož zadání jsou vzácná příležitost: tam, kde se shodnou, je pravděpodobnější, že rozhodnutí je robustní a ne jen zvyk jednoho autora; tam, kde se rozejdou, leží buď skutečný kompromis, který musí rozhodnout zadavatel, nebo slepé místo jednoho z nich. Cílem je najít obojí.
 
 Metoda: (1) mapování rozhodnutí proti rozhodnutí bez ohledu na pojmenování v dokumentech; (2) u každého rozporu určení věcného důvodu — jiný předpoklad, jiná priorita, nebo chyba; (3) nezávislé ověření sporných tvrzení proti primárním zdrojům (MCP specifikace, Microsoft Learn, dokumentace Anthropic a OpenAI, npm a NuGet registry, Node.js release schedule).
 
