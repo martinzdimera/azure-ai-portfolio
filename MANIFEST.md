@@ -4,11 +4,11 @@ Every document here is a sanitized public edition, built from a versioned source
 checked by an automated gate before publication. The gate is fail-closed: a single
 failed check blocks the upload.
 
-**Package:** v2.0 · **Built:** 2026-11-18 · **Gate result:** 10/10 PDF documents passed
+**Package:** v2.1 · **Built:** 2026-11-18 · **Gate result:** 10/10 PDF documents passed
 
 | # | File | Version | Pages | SHA-256 |
 |---|---|---|---:|---|
-| 1 | `UDF2_ARCHITECTURE_v3.1-public.pdf` | v3.1 Public Edition | 26 | `09e1965f4fd584ec0db3ece6ed6df94c18954d53b555029b54284fac34316c50` |
+| 1 | `UDF2_ARCHITECTURE_REFERENCE_v4.0-public.pdf` | v4.0 Public Edition | 71 | `556c57d95e331bbb7125325c9d0fb1aba9719623c459a918343dcee249e4615d` |
 | 2 | `AutoDoc_FW_ARCHITECTURE_v3-public.pdf` | v3 Public Edition (corrected edition) | 25 | `c1ffcc447543db32dd82a146ed849a0c8a12f27e09867601996549fa3ef44a5a` |
 | 3 | `FactoryFW_ARCHITECTURE_REFERENCE_v2.0-public.pdf` | v2.0 Public Edition | 67 | `d0af2c7e30eb494c583ec3474fdd17518157699f68cb2f20a469a9dae7449b99` |
 | 4 | `fleetguard-case-sheet-v2.4.pdf` | v2.4 | 3 | `408fc2939ca9b000bba564a29792da01fa3b274e12911586d9fcd6da725404db` |

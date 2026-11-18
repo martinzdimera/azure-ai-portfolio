@@ -32,20 +32,26 @@ Reference architecture document of a production AKS platform — in preparation.
 
 ### Internal tooling used on real Azure projects
 
-**UDF2** — An infrastructure-as-code configuration and automated deployment tool for Azure environments. It is an internal tool used on real large Azure projects, connecting infrastructure planning with repeatable deployment of hub-and-spoke landing zones. A configurator turns snapshots, landing-zone artifacts or design sheets into reconciled intent and a draft inventory. Planning performs no Azure writes; a human approves the draft before a bridge emits deployment configuration. The deployment pipeline then reads declarative inventory and provisions resources in dependency order. The reference documents architecture profiles, safety boundaries, deployment checks and a live end-to-end exercise that verified the source environment remained unchanged.
+**UDF2** — A tool that organizes Azure infrastructure work into local planning, resource-oriented inventory and command-driven deployment. It is an internal tool used on real large Azure projects. Its Python configurator accepts several source formats, records unresolved information, compares proposals and produces selected inventory documents; a Streamlit workbench adds editing, decision capture and run tracking. A CLI bridge emits deployment configuration, while Bash scripts consume configuration and inventory to request Azure operations. The reference covers system context, building blocks, runtime view, architecture decisions, quality requirements, and risks and technical debt.
 
-Documents: [Architecture reference](UDF2_ARCHITECTURE_v3.1-public.pdf)
+Documents: [Architecture reference v4.0](UDF2_ARCHITECTURE_REFERENCE_v4.0-public.pdf)
 
 <details><summary>What the document covers</summary>
 
-- System Architecture (C4) — Context, components, deployment boundaries and runtime interactions.
-- Layer 1: The Configurator — Intake, reconciliation, draft inventories and planning workbench.
-- Layer 2: The Deploy Framework — Inventory contracts, dependency ordering and profile-aware deployment stages.
-- The Bridge: emit-deploy-config — How planning artifacts become deployment configuration.
-- Governance and Safety Model — Human approvals, sandbox boundaries, redaction and audit records.
-- Testing and Verification — Configurator tests, negative safety checks and deployment verification.
-- Architecture Decision Records — Reasons behind inventory, approval and planning contract choices.
-- Limitations and Failure Modes — Known constraints, failure scenarios and the recovery model.
+- Document control and summary — Summary and revision scope, system walkthrough, reading paths, notation.
+- Goals, stakeholders and concerns — Purpose and quality goals, stakeholders and concerns.
+- Constraints — Technical and execution constraints, evidence and operational constraints.
+- Context and scope — System boundary and external actors, included capabilities and exclusions.
+- Solution strategy — From intent to deployment inputs, profiles and validation strategy.
+- Building blocks — Containers, intake, reconciliation, workbench services, deployment configuration bridge, deployment phases.
+- Runtime view — Intake, materialization, bridge handoff, deployment execution and failure, Apply and rollback, lifecycles.
+- Deployment view — Execution hosts, Profile A network topology, Profile B network topology.
+- Cross-cutting concepts — Safety boundaries, data model, configuration and naming, validation, observability.
+- Architecture decisions — ADR-001 to ADR-014, from sequential Bash to rollback copies.
+- Quality requirements — Quality scenarios and static evidence, validation scope and result limits.
+- Risks and technical debt — Limitations and failure responses, architectural risks, recovery limits.
+- View correspondence and traceability — Viewpoints and concerns, cross-view mappings and known inconsistencies.
+- Glossary — Terms and abbreviations.
 
 </details>
 
