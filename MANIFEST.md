@@ -4,7 +4,7 @@ Every document here is a sanitized public edition, built from a versioned source
 checked by an automated gate before publication. The gate is fail-closed: a single
 failed check blocks the upload.
 
-**Package:** v2.1 · **Built:** 2026-11-18 · **Gate result:** 10/10 PDF documents passed
+**Package:** v2.2 · **Built:** 2026-11-19 · **Gate result:** 11/11 PDF documents passed
 
 | # | File | Version | Pages | SHA-256 |
 |---|---|---|---:|---|
@@ -19,6 +19,7 @@ failed check blocks the upload.
 | 9 | `fleetguard-delivery-mechanics-v1.0.pdf` | v1.0 Public Edition | 12 | `1e6dbcb3f443bfe999d3ee231eba5f0225c84db6aff59459fce67c370c20e600` |
 | 10 | `Deep-Research-apparatus-reference-v3.0-public-EN.pdf` | v3.0 (English) | 15 | `4f2f507d6f4b52ba5b7dfab9f080fe0659af0193a0b708df485fc198d11401ee` |
 | 11 | `mcp-azure-gateway-design/` | v1.0 design documentation (Draft), 62 files, 3862717 bytes | — | `index.html`: `3e6131a4dcaa59fef0de1616d737c1c8680a985fc2ff6424ea5fd2536e614e34`; file list: `088de0463ab365b4d081647404a34d8940247d4b6484e09f16a8f596bd1d29b5` |
+| 12 | `FleetGuard_ARCHITECTURE_REFERENCE_v1.0-public.pdf` | v1.0 Public Edition | 49 | `ebb169ded45bbb9d6ca89e889f85f3fe210f272052829243bd91fb82570e8b8f` |
 
 Verify any file with `shasum -a 256 <file>`.
 Verify the folder (file list) with `cd mcp-azure-gateway-design && find . -type f -print0 | LC_ALL=C sort -z | xargs -0 shasum -a 256 | shasum -a 256`.

@@ -97,12 +97,26 @@ Documents: [Architecture reference v2.0](FactoryFW_ARCHITECTURE_REFERENCE_v2.0-p
 
 </details>
 
-**FleetGuard** — A multi-tenant SaaS product, developed with Factory FW as the framework's first measured pilot. The product documents vehicle-fleet damage through an offline-capable web application. The case sheet describes a stalled AI-prototyped project taken over from its previous author and delivered with the agentic framework: ~5 weeks, 93 commits, 22 merged PRs, application code not written by hand; human approvals at every gate. It also covers verification (a 385-test suite, two production walkthrough rounds) and a pre-production readiness assessment of my own delivery.
+**FleetGuard** — A multi-tenant SaaS product, developed with Factory FW as the framework's first measured pilot. The product documents vehicle-fleet damage through an offline-capable web application. The case sheet describes a stalled AI-prototyped project taken over from its previous author and delivered with the agentic framework: ~5 weeks, 93 commits, 22 merged PRs, application code not written by hand; human approvals at every gate. It also covers verification (a 385-test suite, two production walkthrough rounds) and a pre-production readiness assessment of my own delivery. The architecture reference covers system context, building blocks, runtime and deployment views, cross-cutting concepts, architecture decisions, quality requirements, and risks and technical debt.
 
-Documents: [Case sheet v2.4](fleetguard-case-sheet-v2.4.pdf) · [Delivery mechanics](fleetguard-delivery-mechanics-v1.0.pdf)
+Documents: [Architecture reference v1.0](FleetGuard_ARCHITECTURE_REFERENCE_v1.0-public.pdf) · [Case sheet v2.4](fleetguard-case-sheet-v2.4.pdf) · [Delivery mechanics](fleetguard-delivery-mechanics-v1.0.pdf)
 
 <details><summary>What the document covers</summary>
 
+- Reference: Document control and summary — Summary, A request through the system, Reading paths and notation.
+- Reference: Goals, stakeholders and concerns — Purpose and quality goals, Stakeholders and concerns.
+- Reference: Constraints — Technical constraints, Organisational and data constraints.
+- Reference: Context and scope — System boundary, External actors and trust boundaries.
+- Reference: Solution strategy — Goals and mechanisms, Consistency and change strategy.
+- Reference: Building blocks — Containers, Request and identity composition, Domain modules, Evidence, exports and delivery.
+- Reference: Runtime view — Authenticated request, Offline capture and replay, Outbox delivery, Evidence publication.
+- Reference: Deployment view — Runtime placement, Delivery and promotion, Environment separation, Backup and data restore.
+- Reference: Cross-cutting concepts — Identity and session verification, Tenant scope and access enforcement.
+- Reference: Architecture decisions — ADR-001 Integrated application and PWA, ADR-002 Credentials and server session verification.
+- Reference: Quality requirements — Evidence qualification, Quality scenarios.
+- Reference: Risks and technical debt — Risks and limitations, Failure responses.
+- Reference: View correspondence and traceability — Viewpoints and concerns, Correspondences and known inconsistencies.
+- Reference: Glossary — Terms and identifiers.
 - Case sheet: Context — Product purpose, inherited condition and recovered requirements.
 - Case sheet: Approach — Design gates, staged delivery, independent review and resumable state.
 - Case sheet: Delivery, measured from the repository — Implemented capabilities, development history and recorded human interventions.
